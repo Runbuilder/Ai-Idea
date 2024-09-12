@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 비즈니스 아이디어 생성기</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 min-h-screen flex items-center justify-center">
+    <div id="app" class="bg-white p-8 rounded-lg shadow-2xl max-w-md w-full text-center">
+        <h1 class="text-3xl font-bold mb-6 text-gray-800">🚀 AI 사업 아이디어 생성기</h1>
+        <form id="interestForm" class="mb-6">
+            <input type="text" id="interestInput" class="w-full px-4 py-2 rounded-full border-2 border-purple-300 focus:outline-none focus:border-purple-500" placeholder="관심 분야를 입력하세요" required>
+            <button type="submit" class="mt-4 w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-2 px-4 rounded-full hover:from-purple-600 hover:to-pink-600 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105">
+                <span id="buttonText">💡 아이디어 생성</span>
+                <span id="loadingSpinner" class="hidden">
+                    <svg class="animate-spin h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </span>
+            </button>
+        </form>
+    </div>
+
+    <script>
+        const apiKey = '본인의 키 입력';
+        const apiUrl = 'https://api.openai.com/v1/chat/completions';
+        const model = 'gpt-4o-mini';
+
+        document.getElementById('interestForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const interestInput = document.getElementById('interestInput');
+            const interest = interestInput.value.trim();
+            if (interest) {
+                generateIdeasForInterest(interest);
+                interestInput.value = '';
+                interestInput.focus();
+            }
+        });
+
+        async function generateIdeasForInterest(interest) {
+            setLoading(true);
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: [
+                            {
+                                role: 'system',
+                                content: `사용자가 입력한 관심 분야와 관련된 유망한 사업 아이디어 5가지를 생성해주세요. 각 아이디어는 간단한 설명과 함께 제시해주세요. 각 아이디어 앞에는 적절한 이모지를 붙여주세요.`
+                            },
+                            {
+                                role: 'user',
+                                content: interest
+                            }
+                        ]
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('API 요청 실패');
+                }
+
+                const data = await response.json();
+                const ideas = data.choices[0].message.content.trim().split('\n');
+
+                let resultHTML = '<ol class="text-left space-y-4">';
+                ideas.forEach(idea => {
+                    resultHTML += `<li class="text-lg">${idea}</li>`;
+                });
+                resultHTML += '</ol>';
+
+                Swal.fire({
+                    title: `<span class="text-2xl font-bold">💼 ${interest} 관련 비즈니스 아이디어</span>`,
+                    html: resultHTML,
+                    icon: 'success',
+                    confirmButtonText: '닫기',
+                    confirmButtonColor: '#8B5CF6',
+                    customClass: {
+                        container: 'font-sans',
+                        title: 'text-purple-600',
+                        htmlContainer: 'text-gray-700'
+                    }
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire({
+                    title: '오류 발생',
+                    text: '아이디어 생성 중 문제가 발생했습니다. 다시 시도해주세요.',
+                    icon: 'error',
+                    confirmButtonText: '확인',
+                    confirmButtonColor: '#EF4444'
+                });
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function setLoading(isLoading) {
+            const buttonText = document.getElementById('buttonText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const submitButton = document.querySelector('button[type="submit"]');
+            
+            if (isLoading) {
+                buttonText.classList.add('hidden');
+                loadingSpinner.classList.remove('hidden');
+                submitButton.disabled = true;
+            } else {
+                buttonText.classList.remove('hidden');
+                loadingSpinner.classList.add('hidden');
+                submitButton.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
